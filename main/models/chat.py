@@ -7,7 +7,7 @@ This module defines the database models for storing chats and messages.
 Each chat belongs to a user and contains a series of messages.
 """
 from uuid6 import uuid7
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime
+from sqlalchemy import Index, Column, String, Text, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -71,11 +71,3 @@ class Message(Base):
     
     # Relationship with Chat model
     chat = relationship("Chat", back_populates="messages")
-
-# For possible discussion, usage of UUID Primary Key
-# Benefits of UUID Primary Keys
-
-# Global Uniqueness: UUIDs are globally unique across systems, which makes database merging or data sharing easier.
-# Security: UUIDs don't expose sequential information like auto-incrementing integers, making it harder to guess valid IDs.
-# Distributed Systems: UUIDs can be generated client-side without coordination, which is valuable in distributed systems.
-# No Collisions: When inserting data across multiple servers, there's no risk of primary key collisions.

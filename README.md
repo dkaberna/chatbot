@@ -27,7 +27,7 @@ This is an AI-powered chatbot application built as a RESTful web service with Py
     CHATS {
         UUID id PK
         String user_id INDEX
-        String chat_title INDEX
+        String chat_title
         DateTime created_at
         DateTime updated_at
     }
@@ -41,7 +41,13 @@ This is an AI-powered chatbot application built as a RESTful web service with Py
     }
     
 
-NEEDS EDITING: using UUIDv4 vs UUIDv7. Thoughts on sharding.
+- UUIDv7 is being used as the specific UUID data type rather than UUIDv4 in order to:
+  - Improve B-tree index efficiency (less page fragmentation) and decrease maintenance overhead
+  - Maintain ability to generate unique IDs across multiple application instances or microservices without coordination
+
+- Composite indexes were created on:
+  - CHATS - user_id, chat_title
+  - MESSAGES - chat_id, created_at
 
 ## Running Locally with Docker
 
