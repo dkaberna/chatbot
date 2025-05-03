@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: FastAPI (Local Debug)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "main.app:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "5000",
+                "--reload"
+            ],
+            "jinja": true,
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Pytest File",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-xvs", // stops at first failure, verbose output
+                "${file}" // current file
+            ],
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        }
+    ]
+}
