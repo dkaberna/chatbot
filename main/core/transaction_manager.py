@@ -30,9 +30,12 @@ class TransactionManager:
             List of results from each operation
         """
         results = []
+        # Gives you a connection-level transaction context.
         async with self.engine.begin() as conn:
-            # Create a new session bound to this connection
+            # Gives you a session, but doesn’t start a transaction by default.
             session = AsyncSession(bind=conn)
+            # Must be called to ensure session.in_transaction() works and all session operations (like flush, add, etc.) are properly scoped
+            await session.begin()
             
             try:
                 for operation in operations:
@@ -43,6 +46,7 @@ class TransactionManager:
                 # when the context manager exits
                 return results
             except Exception as e:
+                await session.rollback()
                 # Any error will trigger an automatic rollback when the context exits
                 raise e
 

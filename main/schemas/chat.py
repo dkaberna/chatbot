@@ -5,7 +5,7 @@ This module defines the Pydantic models for request and response validation
 in the chatbot API endpoints.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 from typing import List, Optional
 from datetime import datetime
 import uuid
@@ -66,7 +66,8 @@ class ChatCreate(ChatBase):
     """
     Schema for creating a new chat.
     """
-    pass
+    #pass
+    chat_title: constr(strip_whitespace=True, min_length=1, max_length=100)
 
 
 class ChatUpdate(BaseModel):

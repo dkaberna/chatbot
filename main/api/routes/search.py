@@ -17,7 +17,6 @@ from main.services.search_service import SearchService
 from main.schemas.chat import MessageResponse, SearchRequest
 
 router = APIRouter()
-
 @router.post("", response_model=MessageResponse)
 async def search(request: SearchRequest, db: AsyncSession = Depends(get_db)):
     """
@@ -26,9 +25,10 @@ async def search(request: SearchRequest, db: AsyncSession = Depends(get_db)):
     try:
         service = SearchService(db)
         saved_message = await service.process_search_request(
-            request.user_id, 
-            request.chat_title, 
-            request.question
+            user_id=request.user_id,
+            chat_title=request.chat_title,
+            question=request.question,
+            session=db  # pass explicitly
         )
         return saved_message
     except Exception as e:

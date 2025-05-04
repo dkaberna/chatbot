@@ -12,7 +12,19 @@ This is an AI-powered chatbot application built as a RESTful web service with Py
 - Contextual question answering within conversations
 - Persistent chat history storage and retrieval
 - Full CRUD operations for chat management
-- Clean separation of concerns with service-oriented architecture
+- Service Layer Architecture – Business logic decoupled from API routes
+- Centralized Configuration – All settings managed through a single AppSettings class
+- Repository Pattern – Adds abstraction layer allowing for future CRUD operations on additional entities, eliminating code duplication
+- Clean API Design – Full CORS support, API versioning, and well-structured REST routes
+- Structured Logging – Rich logs with contextual metadata
+- API Key Management – Managed via environment variables for non-production usage
+- Token Efficiency – Aware of LLM token limits (25000) to reduce API costs
+- Input validation using Pydantic
+- Database Transaction Management: 
+  - Repository methods support flexible transaction scopes
+  - Single operations use self-contained transactions by default, while multi-step operations can be grouped into atomic transactions via a TransctionManager class
+  - Chat creation and message persistence are atomic. Both the chat (if new) and its messages are inserted together within one transaction - guaranteeing no partial writes
+  - Chat deletion operations include cascading message deletion within a single transaction for data consistency 
 
 ### Technical Stack
 
@@ -157,22 +169,6 @@ curl -X POST http://localhost:5000/api/v1/search \
   -H "Content-Type: application/json" \
   -d '{"user_id": "test_user"}'
 ```
-
-## Additional Features Implemented
-- Centralized Configuration – All settings managed through a single AppSettings class
-
-- Repository Pattern - Adds abstraction layer allowing for future CRUD operations on additional entities, eliminating code duplication
-
-- Clean API Design – Full CORS support, API versioning, and well-structured REST routes
-
-- Structured Logging – Rich logs with contextual metadata
-
-- API Key Management – Managed via environment variables for non-production usage
-
-- Service Layer Architecture – Business logic decoupled from API routes
-
-- Token Efficiency – Aware of LLM token limits (25000) to reduce API costs
-
 
 Web routes
 ----------

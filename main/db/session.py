@@ -29,7 +29,8 @@ settings = get_app_settings()
 engine = create_async_engine(
     url=settings.database_url,  # Must be of the form: postgresql+asyncpg://user:pass@host/dbname
     echo=True,                  # Enables SQL echo for debugging
-    future=True                 # Uses 2.0 SQLAlchemy execution model
+    future=True,                 # Uses 2.0 SQLAlchemy execution model
+    pool_size=10, max_overflow=20
 )
 
 # Create session factory using the async engine and AsyncSession
