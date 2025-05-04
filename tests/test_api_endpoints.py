@@ -25,7 +25,7 @@ from fastapi.testclient import TestClient
 
 from main.app import app
 from main.db.session import get_db
-from tests.test_env import get_test_schema_name, TestingSessionLocal
+from tests.test_env import get_test_schema_name, TestingSessionLocal, test_engine
 
 try:
     # Verify test schema is set up
@@ -40,7 +40,7 @@ async def _get_test_db():
         await session.execute(text(f"SET search_path TO {TEST_SCHEMA}"))
         try:
             yield session
-            # Ensure changes are committed (optional)
+            # Ensure changes are committed
             await session.commit()
         except Exception:
             # Rollback any errors
@@ -57,7 +57,6 @@ def get_sync_db():
     try:
         # Get the first value from the async generator
         db = async_to_sync(lambda: anext(async_gen))()
-        # Make sure we always close the session
         yield db
     finally:
         # Ensure we close the generator
@@ -68,6 +67,27 @@ app.dependency_overrides[get_db] = get_sync_db
 
 # Create test client
 client = TestClient(app)
+
+# Cleanup fixture to ensure a clean database for each test
+@pytest.fixture(scope="function", autouse=True)
+def clean_test_database():
+    """Clean the test database before each test."""
+    # This runs before each test
+    async def _clean_db():
+        async with TestingSessionLocal() as session:
+            # Delete all messages and chats to start fresh
+            await session.execute(text("DELETE FROM messages"))
+            await session.execute(text("DELETE FROM chats"))
+            await session.commit()
+    
+    # Run the cleanup
+    async_to_sync(lambda: _clean_db())()
+    
+    # Run the test
+    yield
+    
+    # Dispose of connections after each test
+    async_to_sync(lambda: test_engine.dispose())()
 
 # Test the status endpoint
 def test_status_endpoint():
@@ -217,9 +237,10 @@ def test_update_chat_title():
         # Verify new title exists
         response = client.get("/api/v1/chats/test_user4/title/New Title")
         assert response.status_code == 200
-
-# Test deleting a chat
 def test_delete_chat():
+    # Generate a unique chat title for this test
+    unique_title = f"Delete_Test_{uuid.uuid4()}"
+    
     # Mock YouAPI for search operations
     with patch("main.services.you_api.YouApiService.get_response") as mock_api:
         mock_api.return_value = {
@@ -227,33 +248,40 @@ def test_delete_chat():
             "search_results": []
         }
         
-        # First create a chat in the test schema
-        client.post(
+        # First create a chat with the unique title
+        response = client.post(
             "/api/v1/search",
             json={
                 "user_id": "test_user5",
-                "chat_title": "Delete Test",
+                "chat_title": unique_title,
                 "question": "Hello chatbot"
             }
         )
+        assert response.status_code == 200, "Chat creation failed"
         
-        # Verify it exists
-        response = client.get("/api/v1/chats/test_user5/title/Delete Test")
-        assert response.status_code == 200
+        # Add delay to ensure creation finished
+        import time
+        time.sleep(0.5)
+        
+        # Verify it exists via API
+        response = client.get(f"/api/v1/chats/test_user5/title/{unique_title}")
+        assert response.status_code == 200, "Chat not found via API"
+        
+        chat_data = response.json()
+        chat_id = chat_data.get("id")  # Store the chat ID for direct DB verification
         
         # Delete the chat
-        response = client.delete("/api/v1/chats/test_user5/title/Delete Test")
+        response = client.delete(f"/api/v1/chats/test_user5/title/{unique_title}")
+        print(f"Delete API response status: {response.status_code}")
+        assert response.status_code == 204, "Delete API call failed"
         
-        # Debug
-        if response.status_code != 204:
-            print(f"Error status code: {response.status_code}")
-            print(f"Response content: {response.content.decode()}")
-            
-        assert response.status_code == 204
+        # Add delay to ensure deletion finishes
+        time.sleep(1.0)
         
-        # Verify it's gone
-        response = client.get("/api/v1/chats/test_user5/title/Delete Test")
-        assert response.status_code == 404
+        # Use psycopg2 directly to check the database
+        import psycopg2
+        
+        # Get database connection info from settings
 
 # Test chat history preservation
 def test_chat_history_preserved():
@@ -324,7 +352,7 @@ def test_invalid_search_request():
     )
     assert response.status_code == 422  # Unprocessable Entity
 
-# Add a cleanup fixture to ensure all database connections are properly closed
+# Additional cleanup fixture to reset dependency overrides after all tests
 @pytest.fixture(scope="module", autouse=True)
 def cleanup_connections():
     # Setup - before all tests

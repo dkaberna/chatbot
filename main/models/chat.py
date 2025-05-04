@@ -1,10 +1,5 @@
 """
-Chat ORM model definition.
-
-Chat and Message models for the chatbot application.
-
-This module defines the database models for storing chats and messages.
-Each chat belongs to a user and contains a series of messages.
+Chat and Message ORM model definitions. Each chat belongs to a user and contains a series of messages.
 """
 from uuid6 import uuid7
 from sqlalchemy import Index, Column, String, Text, ForeignKey, DateTime
@@ -20,7 +15,7 @@ class Chat(Base):
     Chat model representing a conversation between a user and the chatbot.
     
     Attributes:
-        id: Unique identifier for the chat (UUID)
+        id: Unique identifier for the chat (UUIDv7)
         user_id: Identifier of the user who owns the chat
         chat_title: Title of the chat
         created_at: Timestamp when the chat was created

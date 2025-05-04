@@ -20,40 +20,7 @@ from main.services.chat_service import ChatService
 
 router = APIRouter()
 
-@router.get("/{user_id}/simple/{chat_title}")
-async def get_chat_simple(user_id: str, chat_title: str, db: AsyncSession = Depends(get_db)):
-    chat_repo = ChatRepository(db)
-    chat = await chat_repo.get_by_user_and_title(user_id, chat_title)
-    
-    if not chat:
-        raise HTTPException(status_code=404, detail="Chat not found")
-    
-    # Return simplified dict without using Pydantic
-    return {
-        "id": str(chat.id),
-        "user_id": chat.user_id,
-        "chat_title": chat.chat_title,
-        "created_at": str(chat.created_at) 
-    }
-
-@router.get("/{user_id}/norel/{chat_title}", response_model=ChatResponse)
-async def get_chat_no_relations(user_id: str, chat_title: str, db: AsyncSession = Depends(get_db)):
-    chat_repo = ChatRepository(db)
-    chat = await chat_repo.get_by_user_and_title(user_id, chat_title)
-    
-    if not chat:
-        raise HTTPException(status_code=404, detail="Chat not found")
-    
-    # Create a new ChatResponse directly
-    return ChatResponse(
-        id=chat.id,
-        user_id=chat.user_id,
-        chat_title=chat.chat_title,
-        created_at=chat.created_at,
-        updated_at=chat.updated_at,
-        messages=[]  # Explicitly empty list
-    )
-
+# Route for getting all chats by title
 @router.get("/{user_id}/title/{chat_title}", response_model=ChatResponse, status_code=status.HTTP_200_OK)
 async def get_chat_by_title(user_id: str, chat_title: str, db: AsyncSession = Depends(get_db)):
     service = ChatService(db)
@@ -68,7 +35,7 @@ async def get_chat_by_title(user_id: str, chat_title: str, db: AsyncSession = De
     return chat
 
 # Route for getting all chats
-@router.get("/{user_id}", response_model=List[ChatResponse])
+@router.get("/{user_id}", response_model=List[ChatResponse], status_code=status.HTTP_200_OK)
 async def get_all_chats(user_id: str, db: AsyncSession = Depends(get_db)):
     """
     Get all chats for a specific user.

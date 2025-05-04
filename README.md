@@ -5,7 +5,7 @@
 
 ## Overview
 
-This is an AI-powered chatbot application built as a RESTful web service with Python and FastAPI. The system enables users to interact with an AI assistant, and is aware of previous questions within the same chat. It integrates with the You.com API to provide intelligent, context-aware responses.
+This is an AI-powered chatbot application built as a RESTful web service with Python and FastAPI. The system enables users to interact with an AI assistant, and is aware of previous questions within the same chat. The chatbot integrates with the You.com API to provide intelligent, context-aware responses.
 
 ### Key Features
 
@@ -14,7 +14,7 @@ This is an AI-powered chatbot application built as a RESTful web service with Py
 - Full CRUD operations for chat management
 - Clean separation of concerns with service-oriented architecture
 
-## Technical Stack
+### Technical Stack
 
 - **FastAPI** – High-performance web framework for building APIs
 - **Pydantic** – Data validation and settings management using Python type annotations
@@ -23,7 +23,7 @@ This is an AI-powered chatbot application built as a RESTful web service with Py
 - **Docker** – Containerization for consistent deployment
 - **You.com API** – LLM service for AI-powered responses
 
-## Database Design
+### Database Design
     CHATS {
         UUID id PK
         String user_id INDEX
@@ -66,7 +66,10 @@ cd chatbot_app
 Run in Docker
 -------------
 
-If you want to run app in `Docker`, change host in `DATABASE_URL` in `.env` file to name of docker db service:
+If you want to run app in `Docker`, confirm that `DATABASE_URL` in `.env` is as follows:
+```
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/chatbot
+```
 
 Run project in Docker:
 ```bash
@@ -156,19 +159,19 @@ curl -X POST http://localhost:5000/api/v1/search \
 ```
 
 ## Additional Features Implemented
-✅ Centralized Configuration – All settings managed through a single AppSettings class
+- Centralized Configuration – All settings managed through a single AppSettings class
 
-✅ Repository Pattern - Adds abstraction layer allowing for future CRUD operations on more entities
+- Repository Pattern - Adds abstraction layer allowing for future CRUD operations on additional entities, eliminating code duplication
 
-✅ Clean API Design – Full CORS support, API versioning, and well-structured REST routes
+- Clean API Design – Full CORS support, API versioning, and well-structured REST routes
 
-✅ Structured Logging – Rich logs with contextual metadata
+- Structured Logging – Rich logs with contextual metadata
 
-✅ API Key Management – Managed via environment variables for non-production usage
+- API Key Management – Managed via environment variables for non-production usage
 
-✅ Service Layer Architecture – Business logic decoupled from API routes
+- Service Layer Architecture – Business logic decoupled from API routes
 
-✅ Token Efficiency – Aware of LLM token limits (25000) to reduce API costs
+- Token Efficiency – Aware of LLM token limits (25000) to reduce API costs
 
 
 Web routes
@@ -196,6 +199,7 @@ Files related to application are in the ``main``, ``tests`` and ``alembic`` dire
 │   ├── dependencies.py
 │   ├── exceptions.py
 │   ├── logger.py
+│   ├── transaction_manager.py
 │   └── settings
 │       ├── app.py
 │       └── base.py

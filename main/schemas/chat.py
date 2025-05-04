@@ -11,19 +11,6 @@ from datetime import datetime
 import uuid
 
 
-"""
-Pydantic schemas for the chatbot application.
-
-This module defines the Pydantic models for request and response validation
-in the chatbot API endpoints.
-"""
-
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
-import uuid
-
-
 class MessageBase(BaseModel):
     """
     Base schema for a message with common fields.
@@ -126,7 +113,7 @@ class SearchRequest(BaseModel):
 
 
 ###################################################################################
-## FastAPI and Pydantic need orm_mode = True in a schema when:
+## FastAPI and Pydantic need from_attributes = True in a schema when:
 ##    - You're returning data directly from SQLAlchemy models
 ##    - You want Pydantic to read attributes from ORM objects, not just dicts
 ## 

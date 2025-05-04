@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from main.db.repositories.chat import ChatRepository, MessageRepository
 from main.schemas.chat import ChatCreate, ChatUpdate
+from main.core.transaction_manager import get_transaction_manager
 
 
 class ChatService:
@@ -23,6 +24,7 @@ class ChatService:
         self.db = db
         self.chat_repo = ChatRepository(db)
         self.message_repo = MessageRepository(db)
+        self.transaction_manager = get_transaction_manager()
     
     async def get_chat_by_user_and_title(self, user_id: str, chat_title: str) -> Optional[Dict[str, Any]]:
         """
@@ -115,7 +117,7 @@ class ChatService:
             "messages": messages
         }
     
-    async def delete_chat(self, user_id: str, chat_title: str) -> bool:
+    async def delete_chat(self, user_id: str, chat_title: str) -> Optional[Dict[str, Any]]:
         """
         Delete a chat and its messages.
         
@@ -130,8 +132,12 @@ class ChatService:
         if not chat:
             return None
             
-        # Delete chat with messages
-        success = await self.chat_repo.delete_chat_with_messages(chat.id)
+        # Delete chat and messages in a transaction
+        async def delete_chat_op(session):
+            return await self.chat_repo.delete_chat_with_messages(chat.id, session=session)
+        
+        results = await self.transaction_manager.execute_in_transaction([delete_chat_op])
+        success = results[0]
         
         if success:
             return {

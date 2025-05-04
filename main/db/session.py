@@ -20,6 +20,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from main.core.config import get_app_settings
+from main.core.transaction_manager import get_transaction_manager
 
 # Load environment-specific settings
 settings = get_app_settings()
@@ -38,6 +39,9 @@ SessionLocal = sessionmaker(
     class_=AsyncSession
 )
 
+# Initialize the transaction manager
+transaction_manager = get_transaction_manager(engine)
+
 async def get_db() -> Generator:
     """
     FastAPI dependency that yields an AsyncSession.
@@ -51,6 +55,8 @@ async def get_db() -> Generator:
     """
     db = SessionLocal()
     try:
+        # Attach the engine to the session for access in services
+        db.engine = engine
         yield db
     finally:
         await db.close()

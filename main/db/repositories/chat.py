@@ -36,12 +36,13 @@ class ChatRepository(BaseRepository[Chat, ChatCreate, ChatUpdate]):
         """
         super().__init__(Chat, db)
 
-    async def delete_chat_with_messages(self, chat_id: uuid.UUID) -> bool:
+    async def delete_chat_with_messages(self, chat_id: uuid.UUID, session: Optional[AsyncSession] = None) -> bool:
         """
         Delete a chat and all its associated messages in a transaction.
         
         Args:
             chat_id: The UUID of the chat to delete
+            session: Optional session to use instead of self.db
             
         Returns:
             True if deletion was successful, False otherwise
@@ -50,21 +51,29 @@ class ChatRepository(BaseRepository[Chat, ChatCreate, ChatUpdate]):
             BaseInternalException: If there's a database error
         """
         try:
+            db_session = session or self.db
+            
+
+            # Ensure we're in a transaction before executing database operations
+            if not db_session.in_transaction():
+                await db_session.begin()
+            
             # Delete all messages associated with this chat first
             message_query = text("DELETE FROM messages WHERE chat_id = :chat_id")
-            await self.db.execute(message_query, {"chat_id": chat_id})
-            
+            await db_session.execute(message_query, {"chat_id": str(chat_id)})
+                        
             # Then delete the chat itself
             chat_query = text("DELETE FROM chats WHERE id = :chat_id")
-            await self.db.execute(chat_query, {"chat_id": chat_id})
+            await db_session.execute(chat_query, {"chat_id": str(chat_id)})
             
-            # Commit the changes
-            await self.db.commit()
+            # Only commit if using the default session (no external transaction)
+            if session is None:
+                await self.db.commit()
             
             return True
         except Exception as e:
-            # Rollback in case of error
-            await self.db.rollback()
+            if session is None:
+                await self.db.rollback()
             raise BaseInternalException(
                 message=f"Error deleting chat with ID {chat_id} and its messages: {str(e)}",
                 status_code=500
@@ -131,7 +140,7 @@ class MessageRepository(BaseRepository[Message, MessageCreate, MessageCreate]):
 
     async def get_by_chat(self, chat_id: int) -> List[Message]:
         """
-        Get all messages for a specific chat.
+        Get all messages for a specific chat, ordered by creation time.
         
         Args:
             chat_id: ID of the chat
@@ -140,7 +149,7 @@ class MessageRepository(BaseRepository[Message, MessageCreate, MessageCreate]):
             List of messages in the chat
         """
         try:
-            query = select(Message).where(Message.chat_id == chat_id)
+            query = select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at)
             result = await self.db.execute(query)
             return result.scalars().all()
         except Exception as e:

@@ -49,17 +49,21 @@ print(f"Using test database URL: {TEST_DATABASE_URL}")
 
 # Create test engine with NullPool to avoid connection leaks
 from sqlalchemy.pool import NullPool
+# Modify this in your test_env.py
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
-    poolclass=NullPool,
-    echo=True  # Set to True for debugging SQL queries
+    poolclass=NullPool,  # This is good for tests
+    echo=True,
+    future=True
 )
 
-# Create async session factory
+# Define TestingSessionLocal with explicit connection closing behavior
 TestingSessionLocal = sessionmaker(
     bind=test_engine,
     expire_on_commit=False,
-    class_=AsyncSession
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False
 )
 
 # Get test schema name for compatibility with existing code
