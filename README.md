@@ -249,3 +249,7 @@ Run server with settings:
 ```bash
 make runserver
 ```
+
+Regression Testing Scaffolding and Individualized Tests
+-------------
+Still under development

@@ -364,3 +364,59 @@ def cleanup_connections():
 if __name__ == "__main__":
     print(f"Running tests against schema: {TEST_SCHEMA}")
     pytest.main(["-xvs", __file__])
+
+# import pytest
+# from unittest.mock import patch
+# from httpx import AsyncClient
+
+# from main.app import app
+# from tests.test_env import get_test_db
+
+# # Use FastAPI dependency override
+# @pytest.fixture(autouse=True, scope="module")
+# def override_get_db():
+#     app.dependency_overrides[get_test_db] = get_test_db
+#     yield
+#     app.dependency_overrides.clear()
+
+# @pytest.mark.asyncio
+# async def test_search_create_chat():
+#     with patch("main.services.you_api.YouApiService.get_response") as mock_api:
+#         mock_api.return_value = {"answer": "Mock", "search_results": []}
+#         async with AsyncClient(app=app, base_url="http://test") as client:
+#             response = await client.post("/api/v1/search", json={
+#                 "user_id": "test_user",
+#                 "chat_title": "Test Chat",
+#                 "question": "Hello"
+#             })
+#             assert response.status_code == 200
+#             data = response.json()
+#             assert data["answer"] == "Mock"
+
+# @pytest.mark.asyncio
+# async def test_get_user_chats():
+#     with patch("main.services.you_api.YouApiService.get_response") as mock_api:
+#         mock_api.return_value = {"answer": "Mock", "search_results": []}
+#         async with AsyncClient(app=app, base_url="http://test") as client:
+#             await client.post("/api/v1/search", json={
+#                 "user_id": "test_user2",
+#                 "chat_title": "Chat A",
+#                 "question": "Hello"
+#             })
+#             response = await client.get("/api/v1/chats/test_user2")
+#             assert response.status_code == 200
+#             chats = response.json()
+#             assert any(chat["chat_title"] == "Chat A" for chat in chats)
+
+# @pytest.fixture(scope="module", autouse=True)
+# def cleanup_connections():
+#     yield
+#     app.dependency_overrides.clear()
+
+
+
+
+# if __name__ == "__main__":
+#     import pytest
+#     #print(f"Running tests against schema: {TEST_SCHEMA}")
+#     pytest.main(["-xvs", __file__])
