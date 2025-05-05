@@ -93,6 +93,9 @@ make docker_down
 ```
 
 ## Testing the API with cURL
+To properly view JSON output from each unit-test below, recommend using an online json viewer such as https://jsonviewer.stack.hu/
+
+
 Checking API health/status
 ```bash
 curl http://localhost:5000/api/v1/status
