@@ -72,7 +72,7 @@ This is an AI-powered chatbot application built as a RESTful web service with Py
 
 ```bash
 git clone https://github.com/dkaberna/chatbot.git
-cd chatbot_app
+cd chatbot
 ```
 
 Run in Docker
