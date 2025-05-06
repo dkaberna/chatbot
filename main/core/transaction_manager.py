@@ -34,7 +34,8 @@ class TransactionManager:
         async with self.engine.begin() as conn:
             # Gives you a session, but doesn’t start a transaction by default.
             session = AsyncSession(bind=conn)
-            # Must be called to ensure session.in_transaction() works and all session operations (like flush, add, etc.) are properly scoped
+            # Must be called to ensure session.in_transaction() works and 
+            # all session operations (like flush, add, etc.) are properly scoped
             await session.begin()
             
             try:

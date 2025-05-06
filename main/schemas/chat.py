@@ -59,15 +59,18 @@ class ChatBase(BaseModel):
         chat_title: Title of the chat
     """
     user_id: str
-    chat_title: str
+    chat_title: constr(strip_whitespace=True, min_length=1, max_length=100)
 
 
 class ChatCreate(ChatBase):
     """
     Schema for creating a new chat.
+
+    Attributes:
+        chat_title: New title for the chat. Min length of 1 and max length of 100. White spaces are stripped.
     """
     #pass
-    chat_title: constr(strip_whitespace=True, min_length=1, max_length=100)
+    chat_title: str
 
 
 class ChatUpdate(BaseModel):

@@ -15,6 +15,7 @@ from typing import List
 
 from main.db.session import get_db
 from main.schemas.chat import ChatUpdate, ChatResponse
+from main.schemas.response import Response
 from main.services.chat_service import ChatService
 
 router = APIRouter()
@@ -76,7 +77,7 @@ async def get_all_chats(user_id: str, db: AsyncSession = Depends(get_db)):
 
 
 # Update the DELETE route to match
-@router.delete("/{user_id}/title/{chat_title}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}/title/{chat_title}", response_model=Response)
 async def delete_chat(user_id: str, chat_title: str, db: AsyncSession = Depends(get_db)):
     """
     Delete a specific chat by user_id and chat_title.
