@@ -31,57 +31,68 @@ class ChatRepository(BaseRepository[Chat, ChatCreate, ChatUpdate]):
         """
         Get all chats for a user id and title
         """
-
-        # If a session is explicitly passed into the method (e.g. from a transaction block), that session is used.
-        # If no session is passed, it falls back to the repository’s default session
-        session = session or self.db
-        try:
-            query = select(self.model).where(
-                # self.model ensures the method works for any model type — not just Chat
-                self.model.user_id == user_id,
-                self.model.chat_title == chat_title
-            )
-            result = await session.execute(query)
-            return result.scalars().first()
-        except Exception as e:
-            logger.error(f"Error in get_by_user_and_title {str(e)}")
-            raise BaseInternalException(
-                message=f"Error retrieving chat for user {user_id} and title {chat_title}: {str(e)}",
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        logger.info(f"Retrieving chats for user_id: {user_id} and title {chat_title}")
+        return await self.get_by_fields(
+            conditions={"user_id": user_id, "chat_title": chat_title},
+            session=session,
+            first_only=True
+        )
+        # # If a session is explicitly passed into the method (e.g. from a transaction block), that session is used.
+        # # If no session is passed, it falls back to the repository’s default session
+        # session = session or self.db
+        # try:
+        #     query = select(self.model).where(
+        #         # self.model ensures the method works for any model type — not just Chat
+        #         self.model.user_id == user_id,
+        #         self.model.chat_title == chat_title
+        #     )
+        #     result = await session.execute(query)
+        #     return result.scalars().first()
+        # except Exception as e:
+        #     logger.error(f"Error in get_by_user_and_title {str(e)}")
+        #     raise BaseInternalException(
+        #         message=f"Error retrieving chat for user {user_id} and title {chat_title}: {str(e)}",
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        #     )
 
 
     async def get_all_by_user(self, user_id: str, session: Optional[AsyncSession] = None) -> List[Chat]:
         """
         Get all chats for a user id
         """
-        
-        # If a session is explicitly passed into the method (e.g. from a transaction block), that session is used.
-        # If no session is passed, it falls back to the repository’s default session
-        session = session or self.db 
-        try:
-            logger.info(f"Retrieving chats for user_id: {user_id}")
+        logger.info(f"Retrieving chats for user_id: {user_id}")
+        return await self.get_by_fields(
+            conditions={"user_id": user_id},
+            session=session,
+            first_only=False  # Or just omit as it defaults to False
+        )        
+        # # If a session is explicitly passed into the method (e.g. from a transaction block), that session is used.
+        # # If no session is passed, it falls back to the repository’s default session
+        # session = session or self.db 
+        # try:
+        #     logger.info(f"Retrieving chats for user_id: {user_id}")
 
-            #query = select(Chat).where(Chat.user_id == user_id)
-            query = select(self.model).where(
-                # self.model ensures the method works for any model type — not just Chat
-                self.model.user_id == user_id
-            )
-            result = await session.execute(query)
-            #result = await self.db.execute(query)
-            return result.scalars().all()
-        except Exception as e:
-            logger.error(f"Error in get_all_by_user {str(e)}")
-            raise BaseInternalException(
-                message=f"Error retrieving all chats for user_id {user_id}: {str(e)}",
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        #     #query = select(Chat).where(Chat.user_id == user_id)
+        #     query = select(self.model).where(
+        #         # self.model ensures the method works for any model type — not just Chat
+        #         self.model.user_id == user_id
+        #     )
+        #     result = await session.execute(query)
+        #     #result = await self.db.execute(query)
+        #     return result.scalars().all()
+        # except Exception as e:
+        #     logger.error(f"Error in get_all_by_user {str(e)}")
+        #     raise BaseInternalException(
+        #         message=f"Error retrieving all chats for user_id {user_id}: {str(e)}",
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        #     )
 
     async def delete_chat_with_messages(self, chat_id: int, session: AsyncSession) -> bool:
         """
         Deletes all messages for a chat, followed by the chat itself using raw SQL.
         This must be run inside a transaction block, and will throw an exception otherwise.
         """
+
         try:
             if not session.in_transaction():
                 raise BaseInternalException(message=f"This operation must be called inside a transaction", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -115,14 +126,29 @@ class MessageRepository(BaseRepository[Message, MessageCreate, MessageCreate]):
         super().__init__(Message, db)
 
     async def get_by_chat(self, chat_id: int) -> List[Message]:
-        try:
-            logger.info(f"Retrieving messages for chat_id: {chat_id}")
-            query = select(Message).where(Message.chat_id == chat_id)
-            result = await self.db.execute(query)
-            return result.scalars().all()
-        except Exception as e:
-            logger.error(f"Error in get_by_chat {str(e)}")
-            raise BaseInternalException(
-                message=f"Error retrieving chat for chat_id {chat_id}: {str(e)}",
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        """
+        Retrieves all messages for a specific chat ID.
+        
+        Args:
+            chat_id: The ID of the chat to retrieve messages for
+            session: Optional session for transaction support
+            
+        Returns:
+            List of Message objects for the specified chat
+        """
+        return await self.get_by_fields(
+            conditions={"chat_id": chat_id},
+            session=None,
+            first_only=False
+        )
+        # try:
+        #     logger.info(f"Retrieving messages for chat_id: {chat_id}")
+        #     query = select(Message).where(Message.chat_id == chat_id)
+        #     result = await self.db.execute(query)
+        #     return result.scalars().all()
+        # except Exception as e:
+        #     logger.error(f"Error in get_by_chat {str(e)}")
+        #     raise BaseInternalException(
+        #         message=f"Error retrieving chat for chat_id {chat_id}: {str(e)}",
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        #     )

@@ -45,32 +45,81 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             result = await self.db.execute(query)
             return result.scalars().first()
         except Exception as e:
+            logger.error(f"Error in get: {str(e)}")
             raise BaseInternalException(
                 message=f"Error retrieving {self.model.__name__} with ID {id}: {str(e)}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    async def get_by_field(self, field_name: str, value: Any) -> Optional[ModelType]:
+    # async def get_by_field(self, field_name: str, value: Any) -> Optional[ModelType]:
+    #     try:
+    #         query = select(self.model).where(getattr(self.model, field_name) == value)
+    #         result = await self.db.execute(query)
+    #         return result.scalars().first()
+    #     except Exception as e:
+    #         raise BaseInternalException(
+    #             message=f"Error retrieving {self.model.__name__} by field {field_name}: {str(e)}",
+    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+    #         )
+    async def get_by_fields(self, conditions: Dict[str, Any], session: Optional[AsyncSession] = None, first_only: bool = False) -> Union[Optional[ModelType], List[ModelType]]:
+        """
+        Get records matching multiple field conditions.
+        
+        Args:
+            conditions: Dictionary of field names and values to filter by
+            session: Optional session to use (for transaction support)
+            first_only: If True, return only the first match; otherwise return all matches
+            
+        Returns:
+            A single model instance or None if first_only=True, or a list of model instances
+        """
+
+        # If a session is explicitly passed into the method (e.g. from a transaction block), that session is used.
+        # If no session is passed, it falls back to the repository’s default session
+        session = session or self.db
+        
         try:
-            query = select(self.model).where(getattr(self.model, field_name) == value)
-            result = await self.db.execute(query)
-            return result.scalars().first()
+            # Build a list of conditions for each field-value pair
+            # Uses getattr(self.model, field) to dynamically access the attribute (column) of the model
+            where_conditions = [getattr(self.model, field) == value for field, value in conditions.items()]
+            
+            # Create the query with all conditions
+            # The *where_conditions unpacks the list of conditions as separate arguments to where()
+            # This effectively ANDs all the conditions together
+            query = select(self.model).where(*where_conditions)
+            
+            # Execute the query
+            result = await session.execute(query)
+            
+            # Return either the first result or all results
+            if first_only:
+                return result.scalars().first()
+            else:
+                return result.scalars().all()
+            
         except Exception as e:
+            logger.error(f"Error in get_by_fields {str(e)}")
+            field_names = ", ".join(conditions.keys())
             raise BaseInternalException(
-                message=f"Error retrieving {self.model.__name__} by field {field_name}: {str(e)}",
+                message=f"Error retrieving {self.model.__name__} by fields {field_names}: {str(e)}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
+        
     async def get_multi(self, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
+        """
+        Retrieves a paginated list of records without any filtering
+        """
         try:
             query = select(self.model).offset(skip).limit(limit)
             result = await self.db.execute(query)
             return result.scalars().all()
         except Exception as e:
+            logger.error(f"Error in get_multi: {str(e)}")
             raise BaseInternalException(
                 message=f"Error retrieving multiple {self.model.__name__} records: {str(e)}",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
 
     async def create(self, *, obj_in: CreateSchemaType, session: Optional[AsyncSession] = None) -> ModelType:
         """
@@ -111,6 +160,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return db_obj
         
         except Exception as e:
+            logger.error(f"Error in create: {str(e)}")
             await session.rollback()
             raise BaseInternalException(
                 message=f"Error creating {self.model.__name__}: {str(e)}",
@@ -166,6 +216,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return db_obj
         
         except Exception as e:
+            logger.error(f"Error in update: {str(e)}")
             await session.rollback()
             raise BaseInternalException(
                 message=f"Error updating {self.model.__name__} with ID {db_obj.id}: {str(e)}",
@@ -195,6 +246,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             logger.info(f"Deleted {self.model.__name__} ID {id}: {deleted}")
             return deleted
         except Exception as e:
+            logger.error(f"Error in delete: {str(e)}")
             await session.rollback()
             raise BaseInternalException(
                 message=f"Error deleting {self.model.__name__} with ID {id}: {str(e)}",
